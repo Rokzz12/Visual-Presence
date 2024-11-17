@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test AR #2 with Background Remover</title>
+  <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+  <script src="https://cdn.rawgit.com/jeromeetienne/AR.js/2.1.7/aframe/build/aframe-ar.js"></script>
+  <style>
+    #uploadImage, #removeBgBtn {
+      position: fixed;
+      top: 10px;
+      left: 10px;
+      font-size: 16px;
+      background-color: #fff;
+      padding: 5px;
+      border: 1px solid #ccc;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    #removeBgBtn {
+      left: auto;
+      right: 10px;
+    }
+  </style>
+</head>
+<body style="margin: 0; overflow: hidden;">
+  <!-- AR Scene -->
+  <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+    <!-- Marker for tracking -->
+    <a-marker type="pattern" url="pattern-letterA.patt">
+      <!-- Plane to display the uploaded image -->
+      <a-plane id="imagePlane" position="0 0 0" rotation="-90 0 0" width="3" height="6.0" material="shader: flat;"></a-plane>
+    </a-marker>
+    <!-- Camera to view the scene -->
+    <a-entity camera></a-entity>
+  </a-scene>
+
+  <!-- File input for uploading the image -->
+  <input type="file" id="uploadImage" accept="image/*" />
+  <!-- Button to remove the background -->
+  <button id="removeBgBtn">Remove Background</button>
+
+  <script>
+    let uploadedImageUrl = null;
+    let originalFile = null;
+
+    document.getElementById('uploadImage').addEventListener('change', function(event) {
+      const file = event.target.files[0];
+      if (file) {
+        originalFile = file;  // Save the original file for processing
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          uploadedImageUrl = e.target.result;
+          // Update the material source of the image plane
+          document.getElementById('imagePlane').setAttribute('material', 'src', uploadedImageUrl);
+        };
+        reader.readAsDataURL(file);
+      }
+    });
+
+    document.getElementById('removeBgBtn').addEventListener('click', function() {
+      if (!originalFile) {
+        alert("Please upload an image first!");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('image_file', originalFile);
+
+      // Use the Remove.bg API (you'll need an API key)
+      fetch('https://api.remove.bg/v1.0/removebg', {
+        method: 'POST',
+        headers: {
+          'X-Api-Key': 'i4un4Meyf3jKZ2XcXbpZnerm'
+        },
+        body: formData
+      })
+      .then(response => response.blob())
+      .then(blob => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          // Update the material source of the image plane with the background-removed image
+          document.getElementById('imagePlane').setAttribute('material', 'src', e.target.result);
+        };
+        reader.readAsDataURL(blob);
+      })
+      .catch(err => {
+        console.error("Background removal failed:", err);
+        alert("Failed to remove background. Please try again later.");
+      });
+    });
+  </script>
+</body>
+</html>
